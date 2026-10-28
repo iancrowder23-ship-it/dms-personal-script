@@ -27,7 +27,7 @@ archinstall choices this script relies on: Network = NetworkManager, Audio = Pip
 
 | Question | Answer | Result |
 |---|---|---|
-| paru or yay? | paru | Bootstrap `paru-bin` in Phase 2 (installed here as `paru`) |
+| paru or yay? | paru | Bootstrap `paru` (built from source, not `paru-bin`) in Phase 2 |
 
 ## 3. Mango
 

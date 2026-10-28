@@ -122,7 +122,7 @@ Interview Ian to decide every package and setting. The starting lists further do
 
 - `sudo pacman -Syu --noconfirm`.
 - Install `git` and `base-devel`.
-- If `paru` is not installed, build `paru-bin` from the AUR in a `mktemp -d` folder with `makepkg -si --noconfirm`, then delete the temp folder.
+- If `paru` is not installed (or fails to run), remove any `paru-bin`, clone `https://aur.archlinux.org/paru.git` into a `mktemp -d` folder under `~/.cache`, build it with `makepkg -si --noconfirm`, then delete the folder. Not `paru-bin`: it's prebuilt against one libalpm version and breaks when pacman updates.
 
 **Done when:** running twice in a row does nothing the second time except the update.
 

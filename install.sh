@@ -171,23 +171,37 @@ phase_update_and_aur_helper() {
     # --needed skips anything already installed, so re-running is safe.
     sudo pacman -S --needed --noconfirm git base-devel
 
-    if command -v paru >/dev/null 2>&1; then
+    # Actually run paru instead of just checking it's in PATH: a paru built against an
+    # older pacman fails with "error while loading shared libraries: libalpm.so..."
+    # after pacman updates, and that broken copy needs rebuilding.
+    if paru --version >/dev/null 2>&1; then
         echo "  paru is already installed"
         return
     fi
 
-    echo "  Installing paru from the AUR (paru-bin)"
+    # paru-bin is prebuilt against one libalpm version and breaks whenever pacman bumps it,
+    # which is the library error. It conflicts with the source-built paru, so remove it first.
+    # -Q succeeds if the package is installed.
+    if pacman -Q paru-bin >/dev/null 2>&1; then
+        echo "  Removing broken paru-bin"
+        sudo pacman -R --noconfirm paru-bin
+    fi
 
+    echo "  Building paru from the AUR"
+
+    local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}"
     local build_dir
-    # mktemp -d makes a new empty folder in /tmp with a unique name and prints its path.
-    build_dir="$(mktemp -d)"
+    mkdir -p "$cache_dir"
+    # mktemp -d makes a new empty folder with a unique name and prints its path.
+    # It goes in ~/.cache, not /tmp: /tmp is RAM-backed on Arch and too small for a Rust build.
+    build_dir="$(mktemp -d "$cache_dir/paru-build.XXXXXX")"
 
-    git clone https://aur.archlinux.org/paru-bin.git "$build_dir/paru-bin"
+    git clone https://aur.archlinux.org/paru.git "$build_dir/paru"
 
     # The ( ... ) runs its commands in a subshell: the `cd` only applies inside it,
     # so the rest of the script stays in the folder it started in.
-    # makepkg -s installs build dependencies, -i installs the finished package.
-    (cd "$build_dir/paru-bin" && makepkg -si --noconfirm)
+    # makepkg -s installs build dependencies (like rust), -i installs the finished package.
+    (cd "$build_dir/paru" && makepkg -si --noconfirm)
 
     # -r deletes the folder and everything in it; -f doesn't complain if it's already gone.
     rm -rf "$build_dir"
