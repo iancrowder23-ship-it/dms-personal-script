@@ -189,7 +189,19 @@ phase_update_and_aur_helper() {
 
 phase_packages() {
     header "Phase 3: packages"
-    echo "  (not built yet)"
+
+    # Official repo packages, all in one pacman call.
+    read_list "$PACKAGES_DIR/pacman.txt"
+    sudo pacman -S --needed --noconfirm "${LIST[@]}"
+
+    # AUR packages. paru calls sudo itself when it needs to, so no sudo here.
+    read_list "$PACKAGES_DIR/aur.txt"
+    # ${#LIST[@]} is the number of items in the array.
+    if [[ "${#LIST[@]}" -eq 0 ]]; then
+        echo "  aur.txt is empty, nothing to install from the AUR"
+        return
+    fi
+    paru -S --needed --noconfirm "${LIST[@]}"
 }
 
 phase_dotfiles() {
