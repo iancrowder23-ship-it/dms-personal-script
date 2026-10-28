@@ -26,7 +26,7 @@ wtype
 i2c-tools
 power-profiles-daemon
 
-# Login screen (dux-greeter-bin is in aur.txt; enabled by hand from Dux settings)
+# Login screen (dux-greeter-bin is in aur.txt; enabled in Phase 5)
 greetd
 
 # Clipboard and screenshots (Dux's own dms screenshot / dms clipboard do the rest)

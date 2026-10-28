@@ -156,7 +156,7 @@ Dropped from the reference machine (can be added later): Steam, Flatseal, Claude
 | Service | Answer | Result |
 |---|---|---|
 | ufw (firewall) | Handled by archinstall | Nothing |
-| greetd / Dux Greeter | Install only; Ian turns it on from Dux settings for now | Packages installed, not enabled |
+| greetd / Dux Greeter | Install and enable | Phase 5 runs `dms-greeter enable --yes` |
 | power-profiles-daemon, cups | Not picked | Script enables no services. Ian may need to enable these (or pick printing in archinstall) for the Dux power/printing panels to work. |
 
 ## 14. Anything else

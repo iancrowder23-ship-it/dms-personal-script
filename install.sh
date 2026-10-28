@@ -314,8 +314,12 @@ phase_dux_shell() {
         echo "  Dux Shell will now start with Mango"
     fi
 
-    # The greeter (greetd + dux-greeter-bin) was installed in Phase 3.
-    # It is turned on by hand from Dux settings, so nothing to do here.
+    # Login screen: greetd + dux-greeter-bin were installed in Phase 3.
+    # Upstream's command points greetd at dms-greeter, picks Mango (the only compositor),
+    # and enables greetd.service. It asks for sudo itself, and on re-runs it only
+    # checks that everything is still set up. --yes skips its "Continue?" prompt.
+    dms-greeter enable --yes
+    echo "  Dux Greeter is the login screen"
 }
 
 phase_flatpak() {
@@ -351,7 +355,7 @@ phase_finish() {
     echo "    1. Reboot."
     echo "    2. Log in, open kitty and run:  theme-pick --dms"
     echo "       (makes the terminal follow Dux's wallpaper colours)"
-    echo "    3. Turn on the Dux Greeter (login screen) from Dux settings."
+    echo "    3. Run  dms-greeter sync  so the login screen matches your Dux theme."
     echo "    4. For the Dux power and printing panels, enable their services:"
     echo "       sudo systemctl enable --now power-profiles-daemon cups"
 }

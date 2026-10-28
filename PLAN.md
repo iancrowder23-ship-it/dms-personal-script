@@ -146,7 +146,7 @@ Interview Ian to decide every package and setting. The starting lists further do
 - Its packages are installed in Phase 3.
 - Generate the Mango config with upstream's command: `dms setup headless --compositor mango --skip-existing`. The script never writes Mango config itself.
 - Then check `dms systemd status`. If it doesn't list `mango-session.target`, run `dms systemd enable --compositor mango` (upstream's command), so the shell starts with Mango exactly once.
-- The greeter (`greetd` + `dux-greeter-bin`) is installed but **not** enabled. Ian turns it on from Dux settings.
+- Enable the greeter (`greetd` + `dux-greeter-bin`) with upstream's command: `dms-greeter enable --yes`. It writes `/etc/greetd/config.toml`, picks Mango and enables `greetd.service`; on re-runs it only verifies.
 
 **Done when:** logging into Mango starts Dux Shell automatically, once (not twice).
 
@@ -164,7 +164,7 @@ Interview Ian to decide every package and setting. The starting lists further do
 - Print a short summary and remind Ian to:
   - reboot
   - run `theme-pick --dms` in kitty after first login (Dux has generated its colours by then)
-  - turn on the Dux Greeter from Dux settings
+  - run `dms-greeter sync` after first login so the login screen matches the Dux theme
   - enable `power-profiles-daemon` / `cups` if he wants the Dux power and printing panels (the script enables no services)
 
 ## Package lists
