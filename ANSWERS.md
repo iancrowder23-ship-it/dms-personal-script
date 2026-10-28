@@ -114,7 +114,7 @@ Approved set:
 
 | Question | Answer | Result |
 |---|---|---|
-| How to run fish-dotfiles installer | `-y`, then `theme-pick --dms` after first login | Phase 4 runs `install.sh -y`; Phase 7 summary reminds Ian |
+| How to run fish-dotfiles installer | `-y`, then `theme-pick --dms` after first login | Phase 4 runs `install.sh -y`; Phase 8 summary reminds Ian |
 | App fonts | All four | `noto-fonts`, `noto-fonts-cjk`, `ttf-liberation`, `ttf-dejavu` |
 
 ## 10. Dotfiles
@@ -157,7 +157,7 @@ Dropped from the reference machine (can be added later): Steam, Flatseal, Claude
 |---|---|---|
 | ufw (firewall) | Handled by archinstall | Nothing |
 | greetd / Dux Greeter | Install and enable | Phase 5 runs `dms-greeter enable --yes` |
-| power-profiles-daemon, cups | Not picked | Script enables no services. Ian may need to enable these (or pick printing in archinstall) for the Dux power/printing panels to work. |
+| power-profiles-daemon, cups | Not picked | Script doesn't enable these (only greetd and the Phase 7 maintenance timers). Ian may need to enable these (or pick printing in archinstall) for the Dux power/printing panels to work. |
 
 ## 14. Anything else
 

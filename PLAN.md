@@ -159,13 +159,22 @@ Interview Ian to decide every package and setting. The starting lists further do
 
 **Done when:** a second run reports nothing new to install.
 
-### Phase 7: finish
+### Phase 7: home folders and system tweaks
 
+- `xdg-user-dirs-update` creates Desktop, Documents, Downloads, Music, Pictures, Public, Templates and Videos (existing folders are left alone).
+- Uncomment `#Color` in `/etc/pacman.conf` if it's still commented.
+- `sudo systemctl enable --now fstrim.timer paccache.timer pkgfile-update.timer` (SSD trim, package cache cleanup, pkgfile list), and run `sudo pkgfile --update` once if its list is empty.
+
+**Done when:** a second run changes nothing.
+
+### Phase 8: finish
+
+- If `~/Pictures/wallpaper` is already a git checkout, `git pull --ff-only` it. Otherwise ask (default no) whether to `git clone --depth 1 https://github.com/mylinuxforwork/wallpaper.git` into it (about 1.2 GB).
 - Print a short summary and remind Ian to:
   - reboot
   - run `theme-pick --dms` in kitty after first login (Dux has generated its colours by then)
   - run `dms-greeter sync` after first login so the login screen matches the Dux theme
-  - enable `power-profiles-daemon` / `cups` if he wants the Dux power and printing panels (the script enables no services)
+  - enable `power-profiles-daemon` / `cups` if he wants the Dux power and printing panels (the script only enables the greeter and the Phase 7 maintenance timers)
 
 ## Package lists
 

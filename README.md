@@ -116,7 +116,8 @@ flowchart LR
     D --> E["4 · Dotfiles<br/>kitty, fish, LazyVim"]
     E --> F["5 · Dux Shell<br/>dms setup + systemd"]
     F --> G["6 · Flatpak<br/>apps + dark mode"]
-    G --> H["7 · Done<br/>next steps"]
+    G --> H["7 · Home + system<br/>folders, timers"]
+    H --> I["8 · Done<br/>wallpapers, next steps"]
 ```
 
 | Phase | What happens |
@@ -127,7 +128,8 @@ flowchart LR
 | **4 · Dotfiles** | Runs the fish-dotfiles installer, links `environment.d` files, installs the LazyVim starter |
 | **5 · Dux Shell** | `dms setup headless --compositor mango`, makes sure Dux starts with Mango (once), then `dms-greeter enable` for the login screen |
 | **6 · Flatpak** | Adds Flathub (system-wide), installs the apps, lets Flatpaks read Dux's colours, sets dark mode |
-| **7 · Done** | Prints your next steps |
+| **7 · Home + system** | Creates Documents, Pictures, Music, Videos, etc., turns on pacman colour, and enables SSD trim, package-cache cleanup and pkgfile timers |
+| **8 · Done** | Offers to download the [mylinuxforwork wallpaper pack](https://github.com/mylinuxforwork/wallpaper) into `~/Pictures/wallpaper`, then prints your next steps |
 
 ---
 

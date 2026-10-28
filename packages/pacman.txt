@@ -34,8 +34,35 @@ wl-clipboard
 grim
 slurp
 
-# File manager
+# File manager, plus thumbnails, phones (MTP) and network places in Dolphin
 dolphin
+kio-extras
+ffmpegthumbs
+
+# Home folders (Documents, Pictures, ...) and "open with default app" (Phase 7)
+xdg-user-dirs
+xdg-utils
+
+# Quality of life a minimal install leaves out
+man-db
+man-pages
+less
+pacman-contrib
+pkgfile
+bash-completion
+
+# USB drives and SD cards: Windows (NTFS, exFAT, FAT) formats, and mounting from Dolphin
+ntfs-3g
+exfatprogs
+dosfstools
+udisks2
+
+# Archives and file transfer
+zip
+7zip
+rsync
+wget
+openssh
 
 # Dark mode for GTK and KDE apps
 adw-gtk-theme

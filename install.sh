@@ -26,18 +26,97 @@ CLONE_DIR="$HOME/.local/share/dms-personal-script"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-}")" && pwd)"
 PACKAGES_DIR="$SCRIPT_DIR/packages"
 
+# ── Colours ──────────────────────────────────────────────────
+
+# ANSI escape codes. Only the basic 16 colours, so they also work on the plain
+# Linux console (the TTY you're on right after archinstall).
+# -t 1 means "output is a terminal": no colour codes when output goes to a file or pipe.
+# NO_COLOR is a common convention for turning colour off (no-color.org).
+if [[ -t 1 && -z "${NO_COLOR:-}" && "${TERM:-}" != "dumb" ]]; then
+    # $'...' lets bash understand \033 (the escape character).
+    BOLD=$'\033[1m'
+    DIM=$'\033[2m'
+    RED=$'\033[1;31m'
+    GREEN=$'\033[1;32m'
+    YELLOW=$'\033[1;33m'
+    BLUE=$'\033[1;36m'   # bright cyan, the closest basic colour to Arch blue
+    RESET=$'\033[0m'
+else
+    BOLD="" DIM="" RED="" GREEN="" YELLOW="" BLUE="" RESET=""
+fi
+
 # ── Helpers ──────────────────────────────────────────────────
 
 # A function: call it like a command, e.g. `header "Packages"`.
 # $1 is the first argument passed to it.
 header() {
-    printf '\n==> %s\n' "$1"
+    printf '\n%s::%s %s%s%s\n' "$BLUE" "$RESET" "$BOLD" "$1" "$RESET"
+}
+
+# One line of progress inside a phase.
+info() {
+    printf '  %s->%s %s\n' "$BLUE" "$RESET" "$1"
+}
+
+# Something finished or is already in place.
+ok() {
+    printf '  %s->%s %s\n' "$GREEN" "$RESET" "$1"
+}
+
+# Worth noticing, but not an error.
+warn() {
+    printf '  %s!%s  %s\n' "$YELLOW" "$RESET" "$1"
 }
 
 # Print an error to stderr (>&2) and stop the script with a failure code.
 die() {
-    printf 'Error: %s\n' "$1" >&2
+    printf '%sError:%s %s\n' "$RED" "$RESET" "$1" >&2
     exit 1
+}
+
+# Ask a yes/no question; succeeds only on y or yes. Enter on its own means no.
+# Reads from /dev/tty (your keyboard) so it works under curl | bash too.
+# Usage: if ask "Do the thing?"; then ...; fi
+ask() {
+    local reply=""
+    printf '\n%s?%s %s %s[y/N]%s ' "$YELLOW" "$RESET" "$1" "$DIM" "$RESET"
+    # If there is no keyboard to read from (e.g. run by another program), the answer is no.
+    # 2>/dev/null comes first so it also hides the error if /dev/tty can't be opened.
+    read -r reply 2>/dev/null </dev/tty || true
+    # ,, lowercases the text, so Y and YES work too.
+    [[ "${reply,,}" == "y" || "${reply,,}" == "yes" ]]
+}
+
+# The Arch logo and a title, shown once at the start.
+banner() {
+    printf '%s' "$BLUE"
+    # A here-document: everything up to the line EOF is printed as-is.
+    # The quotes around 'EOF' stop bash from treating ` and $ in the art as code.
+    cat <<'EOF'
+
+                   -`
+                  .o+`
+                 `ooo/
+                `+oooo:
+               `+oooooo:
+               -+oooooo+:
+             `/:-:++oooo+:
+            `/++++/+++++++:
+           `/++++++++++++++:
+          `/+++ooooooooooooo/`
+         ./ooosssso++osssssso+`
+        .oossssso-````/ossssss+`
+       -osssssso.      :ssssssso.
+      :osssssss/        osssso+++.
+     /ossssssss/        +ssssooo/-
+   `/ossssso+/:-        -:/+osssso+-
+  `+sso+:-`                 `.-/+oso:
+ `++:.                           `-/+/
+ .`                                 `/
+EOF
+    printf '%s\n' "$RESET"
+    printf '  %sdms-personal-script%s\n' "$BOLD" "$RESET"
+    printf '  %sArch + MangoWM + Dux Shell%s\n' "$DIM" "$RESET"
 }
 
 # Read a package list file into the global array LIST.
@@ -92,7 +171,7 @@ report_missing() {
     # `|| true` stops strict mode from exiting if grep finds nothing.
     line_number="$(grep -nxF -- "$name" "$file" | cut -d: -f1 | head -n 1 || true)"
 
-    printf '  MISSING  %s line %s: %s\n' "${file#"$SCRIPT_DIR"/}" "${line_number:-?}" "$name"
+    printf '  %sMISSING%s  %s line %s: %s\n' "$RED" "$RESET" "${file#"$SCRIPT_DIR"/}" "${line_number:-?}" "$name"
 
     # $(( ... )) does arithmetic.
     MISSING=$((MISSING + 1))
@@ -132,7 +211,7 @@ run_check() {
         # --aur makes paru look only in the AUR, so a repo package can't pass by mistake.
         check_list "$PACKAGES_DIR/aur.txt" paru -Si --aur
     else
-        printf '  SKIPPED  packages/aur.txt: paru is not installed yet (Phase 2 installs it)\n'
+        printf '  %sSKIPPED%s  packages/aur.txt: paru is not installed yet (Phase 2 installs it)\n' "$YELLOW" "$RESET"
         SKIPPED=$((SKIPPED + 1))
     fi
 
@@ -141,20 +220,20 @@ run_check() {
     if command -v flatpak >/dev/null 2>&1 && flatpak remotes --columns=name | grep -qx flathub; then
         check_list "$PACKAGES_DIR/flatpak.txt" flatpak remote-info flathub
     else
-        printf '  SKIPPED  packages/flatpak.txt: flatpak or the flathub remote is not set up yet (Phase 6 adds it)\n'
+        printf '  %sSKIPPED%s  packages/flatpak.txt: flatpak or the flathub remote is not set up yet (Phase 6 adds it)\n' "$YELLOW" "$RESET"
         SKIPPED=$((SKIPPED + 1))
     fi
 
     echo
     if [[ "$MISSING" -gt 0 ]]; then
-        printf '%d name(s) not found. Fix the lines above (look the new name up on archlinux.org/packages, aur.archlinux.org or flathub.org).\n' "$MISSING"
+        printf '%s%d name(s) not found.%s Fix the lines above (look the new name up on archlinux.org/packages, aur.archlinux.org or flathub.org).\n' "$RED" "$MISSING" "$RESET"
         exit 1
     fi
 
     if [[ "$SKIPPED" -gt 0 ]]; then
-        printf 'All checked names found (%d list(s) skipped, see above).\n' "$SKIPPED"
+        printf '%sAll checked names found%s (%d list(s) skipped, see above).\n' "$GREEN" "$RESET" "$SKIPPED"
     else
-        printf 'All names found.\n'
+        printf '%sAll names found.%s\n' "$GREEN" "$RESET"
     fi
 }
 
@@ -175,7 +254,7 @@ phase_update_and_aur_helper() {
     # older pacman fails with "error while loading shared libraries: libalpm.so..."
     # after pacman updates, and that broken copy needs rebuilding.
     if paru --version >/dev/null 2>&1; then
-        echo "  paru is already installed"
+        ok "paru is already installed"
         return
     fi
 
@@ -183,11 +262,11 @@ phase_update_and_aur_helper() {
     # which is the library error. It conflicts with the source-built paru, so remove it first.
     # -Q succeeds if the package is installed.
     if pacman -Q paru-bin >/dev/null 2>&1; then
-        echo "  Removing broken paru-bin"
+        warn "Removing broken paru-bin"
         sudo pacman -R --noconfirm paru-bin
     fi
 
-    echo "  Building paru from the AUR"
+    info "Building paru from the AUR"
 
     local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}"
     local build_dir
@@ -205,7 +284,7 @@ phase_update_and_aur_helper() {
 
     # -r deletes the folder and everything in it; -f doesn't complain if it's already gone.
     rm -rf "$build_dir"
-    echo "  paru installed"
+    ok "paru installed"
 }
 
 phase_packages() {
@@ -219,7 +298,7 @@ phase_packages() {
     read_list "$PACKAGES_DIR/aur.txt"
     # ${#LIST[@]} is the number of items in the array.
     if [[ "${#LIST[@]}" -eq 0 ]]; then
-        echo "  aur.txt is empty, nothing to install from the AUR"
+        info "aur.txt is empty, nothing to install from the AUR"
         return
     fi
     paru -S --needed --noconfirm "${LIST[@]}"
@@ -234,14 +313,14 @@ phase_dotfiles() {
 
     # -d means "is a directory". A .git folder inside means it's a git checkout.
     if [[ -d "$dotfiles_dir/.git" ]]; then
-        echo "  Updating fish-dotfiles"
+        info "Updating fish-dotfiles"
         # -C runs git as if inside that folder. --ff-only refuses to merge, so local edits are never mixed in.
         git -C "$dotfiles_dir" pull --ff-only
     elif [[ -e "$dotfiles_dir" ]]; then
         # -e means "exists at all". Something is there but it isn't a git checkout: don't touch it.
         die "$dotfiles_dir exists but is not a git checkout. Move it aside and re-run."
     else
-        echo "  Cloning fish-dotfiles"
+        info "Cloning fish-dotfiles"
         git clone "$dotfiles_repo" "$dotfiles_dir"
     fi
 
@@ -272,21 +351,21 @@ phase_dotfiles() {
             local backup
             backup="$target.bak-$(date +%Y%m%d-%H%M%S)"
             mv "$target" "$backup"
-            echo "  Moved existing $target to $backup"
+            warn "Moved existing $target to $backup"
         fi
 
         # ln -s makes a symlink; -f replaces an old link; -n treats an existing link as a file, not a folder.
         ln -sfn "$source_file" "$target"
-        echo "  Linked $target"
+        ok "Linked $target"
     done
 
     # ── Neovim: LazyVim starter config (LazyVim's official install steps) ──
     local nvim_dir="$HOME/.config/nvim"
 
     if [[ -e "$nvim_dir" ]]; then
-        echo "  $nvim_dir already exists, leaving it alone"
+        info "$nvim_dir already exists, leaving it alone"
     else
-        echo "  Installing the LazyVim starter config"
+        info "Installing the LazyVim starter config"
         git clone https://github.com/LazyVim/starter "$nvim_dir"
         # Remove the starter's git history so the config becomes your own.
         rm -rf "$nvim_dir/.git"
@@ -308,10 +387,10 @@ phase_dux_shell() {
 
     # == with *text* on both sides means "contains text".
     if [[ "$status" == *mango-session.target* ]]; then
-        echo "  Dux Shell already starts with Mango"
+        ok "Dux Shell already starts with Mango"
     else
         dms systemd enable --compositor mango
-        echo "  Dux Shell will now start with Mango"
+        ok "Dux Shell will now start with Mango"
     fi
 
     # Login screen: greetd + dux-greeter-bin were installed in Phase 3.
@@ -319,7 +398,7 @@ phase_dux_shell() {
     # and enables greetd.service. It asks for sudo itself, and on re-runs it only
     # checks that everything is still set up. --yes skips its "Continue?" prompt.
     dms-greeter enable --yes
-    echo "  Dux Greeter is the login screen"
+    ok "Dux Greeter is the login screen"
 }
 
 phase_flatpak() {
@@ -330,7 +409,7 @@ phase_flatpak() {
 
     read_list "$PACKAGES_DIR/flatpak.txt"
     if [[ "${#LIST[@]}" -eq 0 ]]; then
-        echo "  flatpak.txt is empty, nothing to install"
+        info "flatpak.txt is empty, nothing to install"
     else
         # Already-installed apps are skipped.
         sudo flatpak install -y --noninteractive flathub "${LIST[@]}"
@@ -345,19 +424,70 @@ phase_flatpak() {
 
     # Tell GTK, libadwaita and Flatpak apps to prefer dark mode.
     gsettings set org.gnome.desktop.interface color-scheme prefer-dark
-    echo "  Dark mode set for GTK, KDE and Flatpak apps"
+    ok "Dark mode set for GTK, KDE and Flatpak apps"
+}
+
+phase_home_and_system() {
+    header "Phase 7: home folders and system tweaks"
+
+    # Desktop, Documents, Downloads, Music, Pictures, Public, Templates, Videos.
+    # xdg-user-dirs (Phase 3) is the standard tool for this: it creates any that are
+    # missing, leaves existing ones (like Downloads) alone, and tells apps where they are.
+    xdg-user-dirs-update
+    ok "Home folders ready (Documents, Pictures, Music, Videos, ...)"
+
+    # Coloured pacman output. Arch ships the line commented out as "#Color".
+    # grep -q only checks; sed -i edits the file in place, and only that one line.
+    if grep -q '^#Color$' /etc/pacman.conf; then
+        sudo sed -i 's/^#Color$/Color/' /etc/pacman.conf
+        ok "Turned on colour in pacman"
+    else
+        ok "pacman colour already on"
+    fi
+
+    # Small built-in maintenance timers (systemctl enable is a no-op if already on):
+    #   fstrim.timer          weekly SSD TRIM, keeps SSDs fast
+    #   paccache.timer        weekly cleanup of old package files in pacman's cache (pacman-contrib)
+    #   pkgfile-update.timer  daily refresh of pkgfile's "which package has this command" list
+    sudo systemctl enable --now fstrim.timer paccache.timer pkgfile-update.timer
+    ok "Maintenance timers on (SSD trim, package cache cleanup, pkgfile)"
+
+    # Fill pkgfile's list now instead of waiting for the timer, so typing a command you
+    # don't have tells you which package provides it (fish uses pkgfile for that).
+    # compgen -G succeeds if the glob matches at least one file.
+    if ! compgen -G "/var/cache/pkgfile/*.files" >/dev/null; then
+        info "Downloading pkgfile's command list"
+        sudo pkgfile --update
+    fi
 }
 
 phase_finish() {
-    header "Phase 7: finish"
+    header "Phase 8: finish"
 
-    echo "  All phases done. Next steps:"
-    echo "    1. Reboot."
-    echo "    2. Log in, open kitty and run:  theme-pick --dms"
-    echo "       (makes the terminal follow Dux's wallpaper colours)"
-    echo "    3. Run  dms-greeter sync  so the login screen matches your Dux theme."
-    echo "    4. For the Dux power and printing panels, enable their services:"
-    echo "       sudo systemctl enable --now power-profiles-daemon cups"
+    # Optional wallpaper pack. xdg-user-dir prints where your Pictures folder is.
+    local wallpaper_dir
+    wallpaper_dir="$(xdg-user-dir PICTURES)/wallpaper"
+
+    if [[ -d "$wallpaper_dir/.git" ]]; then
+        info "Updating wallpapers in $wallpaper_dir"
+        git -C "$wallpaper_dir" pull --ff-only
+    elif [[ -e "$wallpaper_dir" ]]; then
+        warn "$wallpaper_dir exists but is not a git checkout, leaving it alone"
+    elif ask "Download the mylinuxforwork wallpaper pack (about 1.2 GB) into $wallpaper_dir?"; then
+        # --depth 1 skips the repo's history: only the current pictures are downloaded.
+        git clone --depth 1 https://github.com/mylinuxforwork/wallpaper.git "$wallpaper_dir"
+        ok "Wallpapers in $wallpaper_dir (pick one in Dux settings)"
+    else
+        info "Skipped wallpapers"
+    fi
+
+    printf '\n%sAll phases done.%s Next steps:\n' "$GREEN" "$RESET"
+    printf '  %s1.%s Reboot.\n' "$BLUE" "$RESET"
+    printf '  %s2.%s Log in, open kitty and run:  %stheme-pick --dms%s\n' "$BLUE" "$RESET" "$BOLD" "$RESET"
+    printf '     %s(makes the terminal follow Dux'\''s wallpaper colours)%s\n' "$DIM" "$RESET"
+    printf '  %s3.%s Run  %sdms-greeter sync%s  so the login screen matches your Dux theme.\n' "$BLUE" "$RESET" "$BOLD" "$RESET"
+    printf '  %s4.%s For the Dux power and printing panels, enable their services:\n' "$BLUE" "$RESET"
+    printf '     %ssudo systemctl enable --now power-profiles-daemon cups%s\n' "$BOLD" "$RESET"
 }
 
 # ── Bootstrap (curl | bash) ──────────────────────────────────
@@ -371,12 +501,12 @@ bootstrap() {
     sudo pacman -Syu --needed --noconfirm git
 
     if [[ -d "$CLONE_DIR/.git" ]]; then
-        echo "  Updating $CLONE_DIR"
+        info "Updating $CLONE_DIR"
         git -C "$CLONE_DIR" pull --ff-only
     elif [[ -e "$CLONE_DIR" ]]; then
         die "$CLONE_DIR exists but is not a git checkout. Move it aside and re-run."
     else
-        echo "  Cloning into $CLONE_DIR"
+        info "Cloning into $CLONE_DIR"
         git clone "$REPO_URL" "$CLONE_DIR"
     fi
 
@@ -399,6 +529,13 @@ main() {
     # AUR helpers refuse to run as root, so the whole script runs as you and uses sudo only for pacman.
     if [[ "$EUID" -eq 0 ]]; then
         die "Run this as your normal user, not root. It uses sudo where needed."
+    fi
+
+    # Show the logo once. Under curl | bash the script restarts itself from the clone
+    # (see bootstrap), and the exported variable tells that second run it's already shown.
+    if [[ -z "${DMS_BANNER_SHOWN:-}" ]]; then
+        banner
+        export DMS_BANNER_SHOWN=1
     fi
 
     # No packages/ folder next to this script means it came through curl: fetch the repo first.
@@ -429,6 +566,7 @@ main() {
     phase_dotfiles
     phase_dux_shell
     phase_flatpak
+    phase_home_and_system
     phase_finish
 }
 
