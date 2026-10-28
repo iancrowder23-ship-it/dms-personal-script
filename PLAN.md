@@ -144,7 +144,7 @@ Interview Ian to decide every package and setting. The starting lists further do
 
 - Its packages are installed in Phase 3.
 - Generate the Mango config with upstream's command: `dms setup headless --compositor mango --skip-existing`. The script never writes Mango config itself.
-- Check in the VM whether `dms setup headless` already enables the `dms` systemd user service. If it doesn't, also run `dms systemd enable`, only if it isn't enabled yet.
+- Then check `dms systemd status`. If it doesn't list `mango-session.target`, run `dms systemd enable --compositor mango` (upstream's command), so the shell starts with Mango exactly once.
 - The greeter (`greetd` + `dux-greeter-bin`) is installed but **not** enabled. Ian turns it on from Dux settings.
 
 **Done when:** logging into Mango starts Dux Shell automatically, once (not twice).

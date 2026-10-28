@@ -274,17 +274,65 @@ phase_dotfiles() {
 
 phase_dux_shell() {
     header "Phase 5: Dux Shell"
-    echo "  (not built yet)"
+
+    # Upstream's own command writes the Mango config (~/.config/mango) for Dux.
+    # --skip-existing leaves configs that are already there alone, so re-running is safe.
+    dms setup headless --compositor mango --skip-existing
+
+    # Make sure dms.service starts with the Mango session, using upstream's command.
+    # The output is saved in a variable first; `|| true` keeps strict mode from
+    # stopping the script if the status command returns an error.
+    local status
+    status="$(dms systemd status 2>&1 || true)"
+
+    # == with *text* on both sides means "contains text".
+    if [[ "$status" == *mango-session.target* ]]; then
+        echo "  Dux Shell already starts with Mango"
+    else
+        dms systemd enable --compositor mango
+        echo "  Dux Shell will now start with Mango"
+    fi
+
+    # The greeter (greetd + dux-greeter-bin) was installed in Phase 3.
+    # It is turned on by hand from Dux settings, so nothing to do here.
 }
 
 phase_flatpak() {
     header "Phase 6: Flatpak and dark mode"
-    echo "  (not built yet)"
+
+    # Flathub, system-wide. --if-not-exists makes this a no-op on re-runs.
+    sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+    read_list "$PACKAGES_DIR/flatpak.txt"
+    if [[ "${#LIST[@]}" -eq 0 ]]; then
+        echo "  flatpak.txt is empty, nothing to install"
+    else
+        # Already-installed apps are skipped.
+        sudo flatpak install -y --noninteractive flathub "${LIST[@]}"
+    fi
+
+    # Let Flatpak apps read the GTK and KDE colour files Dux generates (read-only).
+    # A --user override also applies to system-installed apps, and needs no sudo.
+    flatpak override --user \
+        --filesystem=xdg-config/gtk-3.0:ro \
+        --filesystem=xdg-config/gtk-4.0:ro \
+        --filesystem=xdg-config/kdeglobals:ro
+
+    # Tell GTK, libadwaita and Flatpak apps to prefer dark mode.
+    gsettings set org.gnome.desktop.interface color-scheme prefer-dark
+    echo "  Dark mode set for GTK, KDE and Flatpak apps"
 }
 
 phase_finish() {
     header "Phase 7: finish"
-    echo "  (not built yet)"
+
+    echo "  All phases done. Next steps:"
+    echo "    1. Reboot."
+    echo "    2. Log in, open kitty and run:  theme-pick --dms"
+    echo "       (makes the terminal follow Dux's wallpaper colours)"
+    echo "    3. Turn on the Dux Greeter (login screen) from Dux settings."
+    echo "    4. For the Dux power and printing panels, enable their services:"
+    echo "       sudo systemctl enable --now power-profiles-daemon cups"
 }
 
 # ── Main ─────────────────────────────────────────────────────
