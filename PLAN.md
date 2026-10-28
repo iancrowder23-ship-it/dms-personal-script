@@ -178,7 +178,7 @@ Notes on names:
 
 - [x] Questionnaire done (`ANSWERS.md`).
 - [ ] In archinstall: minimal profile, Network = NetworkManager, Audio = PipeWire, graphics driver for your GPU.
-- [ ] Push this folder to a git repo so a new install is just `git clone` + `./install.sh`.
+- [x] Pushed to https://github.com/iancrowder23-ship-it/dms-personal-script (new install: `git clone` + `./install.sh`).
 
 ## Sources
 
