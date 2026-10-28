@@ -1,0 +1,60 @@
+# Official repo packages, one per line. Lines starting with # are comments.
+# git and base-devel are installed in Phase 2, before this list.
+
+# Compositor and Wayland basics
+mangowm
+xorg-xwayland
+xdg-desktop-portal-wlr
+xdg-desktop-portal-gtk
+qt6-wayland
+qt5-wayland
+polkit
+
+# Dux Shell: repo dependencies (the shell itself is dux-shell-git in aur.txt)
+dux-gop
+quickshell
+accountsservice
+
+# Dux Shell optional features
+matugen
+cava
+qt6-multimedia
+qt6ct
+cups
+cups-pk-helper
+wtype
+i2c-tools
+power-profiles-daemon
+
+# Login screen (dux-greeter-bin is in aur.txt; enabled by hand from Dux settings)
+greetd
+
+# Clipboard and screenshots (Dux's own dms screenshot / dms clipboard do the rest)
+wl-clipboard
+grim
+slurp
+
+# File manager
+dolphin
+
+# Dark mode for GTK and KDE apps
+adw-gtk-theme
+breeze
+
+# App fonts (terminal fonts come from fish-dotfiles)
+noto-fonts
+noto-fonts-cjk
+ttf-liberation
+ttf-dejavu
+
+# Neovim + LazyVim requirements
+neovim
+lazygit
+tree-sitter-cli
+fzf
+ripgrep
+fd
+unzip
+
+# Flatpak
+flatpak

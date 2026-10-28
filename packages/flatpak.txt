@@ -1,0 +1,12 @@
+# Flathub app IDs, installed system-wide.
+
+# Apps
+com.brave.Browser
+com.obsproject.Studio
+io.github.flattool.Warehouse
+org.videolan.VLC
+org.onlyoffice.desktopeditors
+
+# Dark GTK3 theme for Flatpak apps
+org.gtk.Gtk3theme.adw-gtk3
+org.gtk.Gtk3theme.adw-gtk3-dark

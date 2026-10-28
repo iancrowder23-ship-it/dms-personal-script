@@ -1,0 +1,7 @@
+# AUR packages, installed with paru.
+
+# Dux Shell 2.0 (no stable package exists; this is the only one)
+dux-shell-git
+
+# Dux login screen
+dux-greeter-bin
