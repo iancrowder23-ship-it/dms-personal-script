@@ -206,7 +206,70 @@ phase_packages() {
 
 phase_dotfiles() {
     header "Phase 4: dotfiles, shell and editor"
-    echo "  (not built yet)"
+
+    # ── kitty + fish: Ian's fish-dotfiles repo and its own installer ──
+    local dotfiles_repo="https://github.com/iancrowder23-ship-it/fish-dotfiles.git"
+    local dotfiles_dir="$HOME/.local/share/fish-dotfiles"
+
+    # -d means "is a directory". A .git folder inside means it's a git checkout.
+    if [[ -d "$dotfiles_dir/.git" ]]; then
+        echo "  Updating fish-dotfiles"
+        # -C runs git as if inside that folder. --ff-only refuses to merge, so local edits are never mixed in.
+        git -C "$dotfiles_dir" pull --ff-only
+    elif [[ -e "$dotfiles_dir" ]]; then
+        # -e means "exists at all". Something is there but it isn't a git checkout: don't touch it.
+        die "$dotfiles_dir exists but is not a git checkout. Move it aside and re-run."
+    else
+        echo "  Cloning fish-dotfiles"
+        git clone "$dotfiles_repo" "$dotfiles_dir"
+    fi
+
+    # -y: no questions. Colours are set later with `theme-pick --dms` (see Phase 7).
+    "$dotfiles_dir/install.sh" -y
+
+    # ── environment.d: symlink each file from this repo ──
+    local env_source_dir="$SCRIPT_DIR/dotfiles/environment.d"
+    local env_target_dir="$HOME/.config/environment.d"
+    local source_file
+    local target
+
+    # -p creates parent folders too, and doesn't complain if the folder already exists.
+    mkdir -p "$env_target_dir"
+
+    # A glob: "$env_source_dir"/* expands to every file in that folder.
+    for source_file in "$env_source_dir"/*; do
+        # If the folder is empty the glob stays as a literal "*", so skip that case.
+        if [[ ! -f "$source_file" ]]; then
+            continue
+        fi
+
+        # basename strips the folder part: ".../qt6ct.conf" → "qt6ct.conf".
+        target="$env_target_dir/$(basename "$source_file")"
+
+        # -L means "is a symlink". A real file in the way gets renamed, never deleted.
+        if [[ -e "$target" && ! -L "$target" ]]; then
+            local backup
+            backup="$target.bak-$(date +%Y%m%d-%H%M%S)"
+            mv "$target" "$backup"
+            echo "  Moved existing $target to $backup"
+        fi
+
+        # ln -s makes a symlink; -f replaces an old link; -n treats an existing link as a file, not a folder.
+        ln -sfn "$source_file" "$target"
+        echo "  Linked $target"
+    done
+
+    # ── Neovim: LazyVim starter config (LazyVim's official install steps) ──
+    local nvim_dir="$HOME/.config/nvim"
+
+    if [[ -e "$nvim_dir" ]]; then
+        echo "  $nvim_dir already exists, leaving it alone"
+    else
+        echo "  Installing the LazyVim starter config"
+        git clone https://github.com/LazyVim/starter "$nvim_dir"
+        # Remove the starter's git history so the config becomes your own.
+        rm -rf "$nvim_dir/.git"
+    fi
 }
 
 phase_dux_shell() {
