@@ -156,7 +156,35 @@ run_check() {
 
 phase_update_and_aur_helper() {
     header "Phase 2: system update and AUR helper"
-    echo "  (not built yet)"
+
+    # Full upgrade on every run. Arch doesn't support installing onto an out-of-date system.
+    sudo pacman -Syu --noconfirm
+
+    # git and base-devel are needed to build AUR packages.
+    # --needed skips anything already installed, so re-running is safe.
+    sudo pacman -S --needed --noconfirm git base-devel
+
+    if command -v paru >/dev/null 2>&1; then
+        echo "  paru is already installed"
+        return
+    fi
+
+    echo "  Installing paru from the AUR (paru-bin)"
+
+    local build_dir
+    # mktemp -d makes a new empty folder in /tmp with a unique name and prints its path.
+    build_dir="$(mktemp -d)"
+
+    git clone https://aur.archlinux.org/paru-bin.git "$build_dir/paru-bin"
+
+    # The ( ... ) runs its commands in a subshell: the `cd` only applies inside it,
+    # so the rest of the script stays in the folder it started in.
+    # makepkg -s installs build dependencies, -i installs the finished package.
+    (cd "$build_dir/paru-bin" && makepkg -si --noconfirm)
+
+    # -r deletes the folder and everything in it; -f doesn't complain if it's already gone.
+    rm -rf "$build_dir"
+    echo "  paru installed"
 }
 
 phase_packages() {
