@@ -410,10 +410,36 @@ phase_flatpak() {
     read_list "$PACKAGES_DIR/flatpak.txt"
     if [[ "${#LIST[@]}" -eq 0 ]]; then
         info "flatpak.txt is empty, nothing to install"
-    else
-        # Already-installed apps are skipped.
-        sudo flatpak install -y --noninteractive flathub "${LIST[@]}"
     fi
+
+    # One app at a time. Flathub downloads sometimes stall forever with no error,
+    # and cancelling and retrying gets them going again (what you'd do by hand).
+    # Each try gets 15 minutes; the next try resumes, as finished parts are kept.
+    local app
+    local attempt
+    for app in "${LIST[@]}"; do
+        # flatpak info succeeds if the app is already installed.
+        if flatpak info "$app" >/dev/null 2>&1; then
+            ok "$app already installed"
+            continue
+        fi
+
+        # A counting loop: attempt goes 1, 2, 3.
+        for attempt in 1 2 3; do
+            info "Installing $app (try $attempt of 3)"
+            # timeout stops flatpak if it's still running after 15 minutes.
+            # It runs under sudo so it can stop the root flatpak process.
+            if sudo timeout 15m flatpak install -y --noninteractive flathub "$app"; then
+                ok "$app installed"
+                break
+            fi
+
+            if [[ "$attempt" -eq 3 ]]; then
+                die "$app failed to install 3 times. Check your connection and re-run the script."
+            fi
+            warn "$app stalled or failed, retrying"
+        done
+    done
 
     # Let Flatpak apps read the GTK and KDE colour files Dux generates (read-only).
     # A --user override also applies to system-installed apps, and needs no sudo.

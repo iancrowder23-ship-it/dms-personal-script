@@ -153,7 +153,7 @@ Interview Ian to decide every package and setting. The starting lists further do
 ### Phase 6: Flatpak and dark mode
 
 - `sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo` (system-wide, per the questionnaire).
-- `sudo flatpak install -y --noninteractive flathub` with every ID in `flatpak.txt`.
+- Install each ID in `flatpak.txt` on its own (skip it if `flatpak info` finds it) with `sudo timeout 15m flatpak install -y --noninteractive flathub <id>`, up to 3 tries, because Flathub downloads sometimes stall with no error.
 - Let Flatpak apps read Dux's colours: `flatpak override --user --filesystem=xdg-config/gtk-3.0:ro --filesystem=xdg-config/gtk-4.0:ro --filesystem=xdg-config/kdeglobals:ro`. A `--user` override also applies to system-installed apps.
 - `gsettings set org.gnome.desktop.interface color-scheme prefer-dark`.
 
