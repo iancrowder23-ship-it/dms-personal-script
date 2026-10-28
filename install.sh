@@ -6,6 +6,9 @@
 #
 #   ./install.sh          run every phase in order
 #   ./install.sh --check  only check that every package name still exists
+#
+# One-line install (see bootstrap below):
+#   curl -fsSL https://raw.githubusercontent.com/iancrowder23-ship-it/dms-personal-script/main/install.sh | bash
 
 # Strict mode:
 #   -e           stop the script as soon as any command fails
@@ -13,10 +16,14 @@
 #   -o pipefail  a pipeline like `a | b` fails if any part fails, not just the last
 set -euo pipefail
 
+REPO_URL="https://github.com/iancrowder23-ship-it/dms-personal-script.git"
+CLONE_DIR="$HOME/.local/share/dms-personal-script"
+
 # Folder this script lives in, so it works no matter where you run it from.
 # $(...) runs a command and uses its output as text.
-# "${BASH_SOURCE[0]}" is the path of this script file.
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# "${BASH_SOURCE[0]}" is the path of this script file. When the script is piped
+# in through curl there is no file, so ${...:-} gives an empty string instead of an error.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-}")" && pwd)"
 PACKAGES_DIR="$SCRIPT_DIR/packages"
 
 # ── Helpers ──────────────────────────────────────────────────
@@ -335,10 +342,36 @@ phase_finish() {
     echo "       sudo systemctl enable --now power-profiles-daemon cups"
 }
 
+# ── Bootstrap (curl | bash) ──────────────────────────────────
+
+# When run through curl, only this one file arrives, without packages/ and dotfiles/.
+# So: install git, clone (or update) the whole repo, and run install.sh from the clone.
+bootstrap() {
+    header "Getting dms-personal-script"
+
+    # A full upgrade together with git, since Arch doesn't support partial upgrades.
+    sudo pacman -Syu --needed --noconfirm git
+
+    if [[ -d "$CLONE_DIR/.git" ]]; then
+        echo "  Updating $CLONE_DIR"
+        git -C "$CLONE_DIR" pull --ff-only
+    elif [[ -e "$CLONE_DIR" ]]; then
+        die "$CLONE_DIR exists but is not a git checkout. Move it aside and re-run."
+    else
+        echo "  Cloning into $CLONE_DIR"
+        git clone "$REPO_URL" "$CLONE_DIR"
+    fi
+
+    # exec replaces this process with the cloned install.sh, passing the same arguments.
+    # </dev/tty connects its input to your keyboard: under curl | bash, input is the
+    # download pipe, and prompts (sudo, chsh, paru) need to read from you instead.
+    exec "$CLONE_DIR/install.sh" "$@" </dev/tty
+}
+
 # ── Main ─────────────────────────────────────────────────────
 
 usage() {
-    echo "Usage: ./install.sh [--check]"
+    echo "Usage: ./install.sh [--check]   (or through curl, see README.md)"
     echo "  (no option)  run every phase in order"
     echo "  --check      only check that every package name still exists, install nothing"
 }
@@ -348,6 +381,11 @@ main() {
     # AUR helpers refuse to run as root, so the whole script runs as you and uses sudo only for pacman.
     if [[ "$EUID" -eq 0 ]]; then
         die "Run this as your normal user, not root. It uses sudo where needed."
+    fi
+
+    # No packages/ folder next to this script means it came through curl: fetch the repo first.
+    if [[ ! -d "$PACKAGES_DIR" ]]; then
+        bootstrap "$@"
     fi
 
     # $# is the number of arguments. `case` picks a branch by matching text.

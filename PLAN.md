@@ -41,7 +41,7 @@ These are the whole point. Each rule removes a common way post-install scripts b
 4. **Check every name before installing anything.** A `--check` mode confirms every listed package still exists. After a rename upstream, it tells you exactly which line to fix instead of failing halfway through an install.
 5. **Configs are symlinked from a git repo, never edited in place.** The script never uses `sed` or `echo >>` on config files. Your configs are copied over whole, so upstream default changes cannot conflict with edits.
 6. **Use upstream's own setup commands.** For example, Dux Shell's `dms systemd enable` instead of hand-writing service files.
-7. **No `curl ... | sh`.** It runs code nobody has read, and it changes without warning.
+7. **No `curl ... | sh` of other people's code.** It runs code nobody has read, and it changes without warning. The one exception (Ian's choice, 2026-10-27) is this repo's own `install.sh` as the one-line installer. Under curl it only installs git, clones this repo, and runs the cloned copy. Every other step still installs from packages or upstream commands.
 8. **Full system upgrade first, every run** (`pacman -Syu`). Arch does not support partial upgrades, and installing on top of a stale system is a common breakage.
 9. **Every step checks before acting** (`--needed`, `command -v`, `[[ -d ... ]]`), so re-running is always safe and also works as a repair.
 
@@ -70,6 +70,7 @@ archinstall runs first and handles graphics drivers, hardware, network (choose N
 
 - `./install.sh` runs every phase in order.
 - `./install.sh --check` only validates package names and exits. Installs nothing.
+- Piped through curl (no `packages/` folder next to it), it bootstraps: `pacman -Syu --needed git`, clones or updates this repo in `~/.local/share/dms-personal-script`, then `exec`s the cloned `install.sh` with input from `/dev/tty` so prompts still work.
 - Refuses to run as root (AUR helpers break as root). Uses `sudo` only for pacman commands.
 - Starts with `set -euo pipefail` so any failure stops the script.
 - Prints a `==> Phase name` header before each phase.
